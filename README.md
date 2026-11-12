@@ -68,3 +68,15 @@ This application runs in Google AI Studio using **Cloud Firestore** (NoSQL docum
   - 14 campus facilities across all 8 facility categories.
   - 13 sample bookings across `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, and `COMPLETED`.
   - 8 sample maintenance tickets across `OPEN`, `ASSIGNED`, `IN_PROGRESS`, `RESOLVED`, and `CLOSED`.
+ 
+  - ## Room Booking Workflow
+
+The CampusOS platform allows students and faculty
+to request campus facility reservations.
+
+1. Users select a facility and preferred time slot.
+2. The system validates the booking request.
+3. Administrators review pending requests.
+4. Approved bookings are recorded in the database.
+5. Users can track reservation status through
+   their dashboard.
