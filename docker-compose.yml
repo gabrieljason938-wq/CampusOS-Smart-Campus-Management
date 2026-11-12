@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smart_campus_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SQL_DB_NAME:-smart_campus}
+      POSTGRES_USER: ${SQL_ADMIN_USER:-postgres}
+      POSTGRES_PASSWORD: ${SQL_ADMIN_PASSWORD:-smart_campus_dev_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - smart_campus_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_ADMIN_USER:-postgres} -d ${SQL_DB_NAME:-smart_campus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart_campus_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      SQL_HOST: postgres
+      SQL_PORT: 5432
+      SQL_DB_NAME: ${SQL_DB_NAME:-smart_campus}
+      SQL_USER: ${SQL_ADMIN_USER:-postgres}
+      SQL_PASSWORD: ${SQL_ADMIN_PASSWORD:-smart_campus_dev_pass}
+      SQL_ADMIN_USER: ${SQL_ADMIN_USER:-postgres}
+      SQL_ADMIN_PASSWORD: ${SQL_ADMIN_PASSWORD:-smart_campus_dev_pass}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    command: >
+      sh -c "npx drizzle-kit push --config=src/db/drizzle.config.ts && npm run seed && npm run start"
+
+volumes:
+  smart_campus_pgdata:
