@@ -1,7 +1,83 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+export interface FirebaseWebConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+  firestoreDatabaseId: string;
+  measurementId?: string;
+}
+
+declare global {
+  interface Window {
+    __FIREBASE_CONFIG__?: Partial<FirebaseWebConfig>;
+  }
+}
+
+declare const __FIREBASE_APPLET_FALLBACK__: Partial<FirebaseWebConfig> | null | undefined;
+
+function resolveFirebaseConfig(): FirebaseWebConfig {
+  const runtime =
+    typeof window !== 'undefined' && window.__FIREBASE_CONFIG__
+      ? window.__FIREBASE_CONFIG__
+      : undefined;
+
+  const fallback =
+    typeof __FIREBASE_APPLET_FALLBACK__ !== 'undefined' && __FIREBASE_APPLET_FALLBACK__
+      ? __FIREBASE_APPLET_FALLBACK__
+      : undefined;
+
+  const envConfig: Partial<FirebaseWebConfig> = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  };
+
+  const config: FirebaseWebConfig = {
+    apiKey: runtime?.apiKey || envConfig.apiKey || fallback?.apiKey || '',
+    authDomain: runtime?.authDomain || envConfig.authDomain || fallback?.authDomain || '',
+    projectId: runtime?.projectId || envConfig.projectId || fallback?.projectId || '',
+    storageBucket:
+      runtime?.storageBucket || envConfig.storageBucket || fallback?.storageBucket || '',
+    messagingSenderId:
+      runtime?.messagingSenderId ||
+      envConfig.messagingSenderId ||
+      fallback?.messagingSenderId ||
+      '',
+    appId: runtime?.appId || envConfig.appId || fallback?.appId || '',
+    firestoreDatabaseId:
+      runtime?.firestoreDatabaseId ||
+      envConfig.firestoreDatabaseId ||
+      fallback?.firestoreDatabaseId ||
+      '(default)',
+    ...(runtime?.measurementId || envConfig.measurementId || fallback?.measurementId
+      ? {
+          measurementId:
+            runtime?.measurementId || envConfig.measurementId || fallback?.measurementId,
+        }
+      : {}),
+  };
+
+  if (!config.apiKey || !config.projectId || !config.appId) {
+    throw new Error(
+      'Missing Firebase Web configuration. Configure VITE_FIREBASE_* variables in .env before starting the container.'
+    );
+  }
+
+  return config;
+}
+
+const firebaseConfig = resolveFirebaseConfig();
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
